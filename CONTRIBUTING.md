@@ -1,117 +1,75 @@
-# How To Contribute
+# Contributing to KOSMOS
 
-There are several ways to contribute to the development of ReactOS. The most often encountered problem is not knowing where to begin or what to do. If you are able to program or understand the technical information that is pertinent to this project, helping the development can be easy.
+> **Добро пожаловать в KOSMOS!** Этот документ — ваш путеводитель по участию в разработке операционной системы KOSMOS. Мы высоко ценим ваш интерес и готовы помочь вам внести значимый вклад в наш форк ReactOS, ориентированный на стабильность и совместимость с NT Workstation 10.
 
-- [What To Do?](#what-to-do)
-- [How To Contribute?](#how-to-contribute)
-- [Where To Start?](#where-to-start)
+## 🎯 Наша философия и цели
 
-**Legal notice:** If you have seen Microsoft Windows source code, your contribution won't be accepted because of potential copyright violation. Before contributing, you must affirm that the following is true:
->I hereby swear that I have not used nor seen the source code to any version of the Windows operating system
->nor any Microsoft product that may be related to the proposed project that is under a license incompatible
->with contribution to ReactOS, including but not limited to the leaked Windows 2000 source code and the Windows Research Kernel.
+KOSMOS — это операционная система с открытым исходным кодом, основанная на ReactOS. Наша главная цель — создать стабильную, совместимую с `NT Workstation 10` альтернативу, сохранив при этом открытость и сообщество. Как указано в общих принципах открытого ПО, мы стремимся к созданию гостеприимного сообщества, где каждый может внести свой вклад.
 
-## What To Do?
+Основные принципы:
+- **Стабильность превыше всего:** Каждое изменение должно повышать надежность системы.
+- **Совместимость с NT Workstation 10:** Наша целевая модель совместимости и поведения.
+- **Открытость и прозрачность:** Все обсуждения и разработка ведутся публично.
+- **Уважительное общение:** Мы следуем Кодексу поведения (см. ниже) для поддержания здоровой атмосферы.
 
-### Fix bugs
+## 📋 Как начать участвовать?
 
-You can try to fix a few bugs that are already listed in [JIRA]. Squashing bugs is not a simple task. It requires a lot more skill than simply searching for them, and can be time consuming; however, by doing that you greatly help ReactOS become a stable system.
+Если вы новичок в open source, ознакомьтесь с общими рекомендациями по вкладу в открытые проекты. Для KOSMOS мы предлагаем следующий путь:
 
-_NOTE: patches related to 3rd party code such as Wine or BtrFS should be sent to upstream of the said projects. See [3rd Party Files.txt], [README.WINE] and [README.FSD] in [media/doc](media/doc) for details._
+1.  **Изучите проект:** Ознакомьтесь с репозиторием, документацией и целями KOSMOS.
+2.  **Найдите задачу:** Посмотрите задачи с метками `good first issue` или `help wanted` в нашем трекере. Для начала хорошо подойдут исправления документации, переводы или простые баги.
+3.  **Задавайте вопросы:** Не стесняйтесь спрашивать в каналах нашего сообщества, если что-то непонятно. Построение дружелюбного сообщества — это ключ к успеху проекта.
+4.  **Сделайте Pull Request:** Следуйте нашему процессу (описан ниже).
 
-### Fix tests
+## 🛠 Процесс разработки и Pull Request
 
-Tests are used to check the functionality and correctness of APIs on ReactOS compared to Windows implementations. There are some unit tests that you could help ReactOS pass, which can be found [in the Web Test Manager][testman] and some that are broken or yet to be written.
+Чтобы изменения были приняты, пожалуйста, следуйте этому процессу:
 
-### Fix Coverity scans
+1.  **Создайте ветку (fork)** репозитория и клонируйте её локально.
+2.  **Создайте новую ветку** для вашей функциональности или исправления (`git checkout -b feature/AmazingFeature`).
+3.  **Внесите изменения.** Убедитесь, что ваш код соответствует нашему стилю. Для KOSMOS это означает:
+    *   Следование существующему стилю кода ReactOS/C.
+    *   Написание понятных комментариев для сложных участков кода.
+    *   **Крайне важно:** Добавление или обновление тестов для ваших изменений, где это возможно. Стабильность — наш приоритет.
+4.  **Протестируйте изменения.** Убедитесь, что ваши изменения не ломают существующую функциональность. Если возможно, протестируйте в виртуальной машине с целью — NT Workstation 10.
+5.  **Зафиксируйте изменения** (`git commit -m 'Add some AmazingFeature'`). Сообщение коммита должно быть ясным и описывать суть изменения.
+6.  **Отправьте изменения в ваш форк** (`git push origin feature/AmazingFeature`).
+7.  **Откройте Pull Request (PR)** в основной репозиторий KOSMOS.
+    *   В описании PR четко укажите, какую проблему он решает или какую функцию добавляет.
+    *   Ссылайтесь на соответствующий issue (если есть).
+    *   Опишите, как вы тестировали свои изменения.
 
-[Coverity] is enhanced static analysis that uncovers leaks, buffer overflows, security issues and other. We do such scans on ReactOS codebase pretty often. You can [request][request-coverity] to see Coverity 'defects' and help to fix them.
+Ваш PR будет рассмотрен мейнтейнерами. Процесс ревью — это диалог, направленный на улучшение кода и его интеграцию в проект.
 
-### Test ReactOS
+## 📜 Кодекс поведения
 
-By localizing bugs, developers can identify what causes the bug and which part it affects. There are a variety of methods to [debug] ReactOS while testing it. After identifying a bug, check if it is already known about by searching on JIRA and adding any additional information to the report. If you think that it is an unidentified bug, consider [filing a bug report].
+Как и во многих успешных проектах с открытым исходным кодом, мы приняли Кодекс поведения, чтобы сделать наше сообщество гостеприимным для всех.
 
-### Implement new things
+Мы обязуемся создавать и поддерживать дружелюбную, уважительную и продуктивную среду для всех участников, независимо от их опыта, происхождения или взглядов. Любые формы оскорбительного, дискриминационного или недостойного поведения неприемлемы.
 
-Considering ReactOS is alpha quality software, there is a lot of [missing functionality] that Windows operating systems have. Before starting a project to implement something, find out whether another person is working on the same thing. If you find that someone is already working on it, ask if any assistance is needed for what specifically is being worked on or a related project. More often than not, someone will start to implement something and move onto something else before it's complete. Make sure you stay committed to what you are going to implement, and do not be afraid to ask for assistance if you need help with something.
+Если вы столкнулись с неприемлемым поведением, пожалуйста, сообщите об этом мейнтейнерам проекта. Мы рассмотрим каждое сообщение и предпримем необходимые действия.
 
-### Write documentation
+## 🏛 Управление проектом и лидерство
 
-There are some important points if you would like to help document ReactOS:
+KOSMOS развивается силами сообщества. Стратегические решения и общее направление проекта обсуждаются публично основными мейнтейнерами и активными участниками, как это принято в моделях управления открытыми проектами. Мы стремимся к прозрачности в принятии решений.
 
-1. Make sure the documentation does not exist yet (if it does, help improve it).
-2. Respect [clean room reverse engineering] practices.
-3. Add your knowledge to a place where the other developers can find it.
+Мейнтейнеры несут ответственность за ревью кода, управление релизами и поддержание общего видения проекта. Если вы заинтересованы в том, чтобы взять на себя больше ответственности в долгосрочной перспективе, проявите инициативу через качественные и стабильные вклады.
 
-## How To Contribute?
+## 🧪 Тестирование и обеспечение качества
 
-Your contribution can be of numerous forms. We currently accept two ways to contribute - Pull Requests and Patches.
+Поскольку наша цель — **стабильность**, тестированию уделяется особое внимание.
+*   **Регрессионное тестирование:** Все PR должны проходить автоматические тесты, если они доступны для затронутой подсистемы.
+*   **Тестирование совместимости:** По возможности проверяйте, как изменения влияют на поведение, ориентированное на NT Workstation 10.
+*   **Тестирование сборки:** Убедитесь, что ваши изменения успешно компилируются в различных конфигурациях (если это применимо).
 
-### Pull Requests
+## ⚖️ Юридические аспекты и лицензирование
 
-Since our [migration to GitHub] we gladly accept __[Pull Requests]__. Pull requests let you tell others about changes you have pushed to a repository on GitHub. Once a pull request is opened, you can discuss and review the potential changes with collaborators and add follow-up commits before the changes are merged into the repository. __Pull request is a preferred way to submit your work__ - it makes reviewing and merging your contribution much easier.
+KOSMOS, как форк ReactOS, распространяется под лицензией **GNU General Public License v2 (GPL-2.0)** и другими совместимыми свободными лицензиями, унаследованными от исходного кода ReactOS и других компонентов.
 
-### Patches
+Путем отправки кода в этот проект вы соглашаетесь с тем, что ваш вклад будет лицензирован на тех же условиях. Убедитесь, что у вас есть право на лицензирование вашего кода для нас на этих условиях. Если вы используете код третьих сторон, убедитесь, что его лицензия совместима с GPL-2.0, и должным образом укажите авторство.
 
-A __[patch]__ is a set of changes to existing source code. The changes in a patch can be merged into existing source code. This process is referred to as applying a patch (to source code). Which changes a patch contains and the way the patch is structured can have significant impact on the consequences that can happen from applying the patch.
+## 🙏 Благодарности
 
-See [Submitting Patches] for details.
+Спасибо, что нашли время внести свой вклад! Каждое исправление, каждый тест и каждый комментарий помогают нам приблизиться к созданию стабильной, свободной операционной системы, совместимой с NT.
 
-### Commit style
-
-Our commit style is defined in a __[commit template]__. Use it as a reference or turn it on using `git config commit.template .gitmessage`. This will set this template as an initial commit message for the new commits in your local repository.
-
-### Rules and Recommendations
-
-- *Use your __real name__ and __real email__.* We do not accept anonymous code contributions!
-  - Every commit that changes code or translations should have author's full legal name (in latin letters, diacritics allowed).
-  - It's recommended to have the same full name set in GitHub profile (in the [Name field here][GitHub Profile Settings]) that matches one specified in commits.
-- There is an exception for media changes, such as changes of art (wallpapers, themes, icons, sounds) and out-of-code documentation.
-  - In these specific cases it's allowed to use a nickname or alias as author's name, and it's recommended to have the same name set in GitHub profile (in the [Name field here][GitHub Profile Settings]) matching one specified in commits.
-- In any case the author must use a real e-mail address, this includes git commits (`user.email` setting) and GitHub [e-mail settings][GitHub Email Settings] - the checkbox "Keep my email addresses private" must be unchecked there.
-  - In order to *keep your privacy*, select appropriate "Primary email address" that will be applied to your commits in GitHub [e-mail settings][GitHub Email Settings].
-- *Ensure your contribution is properly described.* Include the relevant issue number if applicable.
-- *Put only related changes.* It will make reviewing easier as the reviewer needs to recall less information about the existing source code that is changed.
-- *Search for similar pull requests/patches before submitting.* It may be that a similar pull request or issue was opened previously. Comment and review on that one instead.
-- *Keep your contribution small and focused on the topic.* It can be tempting to fix existing issues as you come across them while reading the source code. Resist the temptation and put in a note in the source code instead, or (even better) put the issue in the issue tracking system.
-- *Respect our __[Coding Style]__ and __[Programming Guidelines]__.*
-- *Do not be afraid to ask questions.* Ask our developers in the [chat].
-
-To amend your commit with your name and e-mail (in any case you've forgot to set your name/e-mail) please take a look at this [guide](https://reactos.org/wiki/ReactOS_Git_For_Dummies#Amending_your_commit_with_name.2FE-mail). To set your name/e-mail globally for future commits that you push, [read this](https://reactos.org/wiki/ReactOS_Git_For_Dummies#Assign_commits_with_your_name_.26_E-mail_automatically).
-
-## Where To Start?
-
-Finding a good project to start with can be a challenge, because when starting out you are (usually) not aware of all the possibilities. To help you find a project, here are some ideas to try:
-
-- Find a test that fails, and try to make it succeed: <https://reactos.org/testman/>
-- Look around in JIRA, and if you have problems finding nice projects to start with, there is a label for this: <https://jira.reactos.org/issues/?jql=labels%20%3D%20starter-project>
-- Ask for help in the [chat]
-- Additionally, there are some tests that cause crashes/hangs, but these might be slightly harder: <https://jira.reactos.org/browse/ROSTESTS-125>
-
-  [clean room reverse engineering]:                              https://en.wikipedia.org/wiki/Clean_room_design
-  [debug]:                                                       https://reactos.org/wiki/Debugging
-  [JIRA]:                                                        https://jira.reactos.org/
-  [filing a bug report]:                                         https://reactos.org/wiki/File_Bugs
-  [testman]:                                                     https://reactos.org/testman/
-  [migration to GitHub]:                                         https://reactos.org/project-news/reactos-repository-migrated-github/
-  [humans are terrible at tracking large amount of information]: https://www.eurekalert.org/pub_releases/2005-03/aps-hmc030805.php
-  [Pull requests]:                                               https://help.github.com/articles/about-pull-requests/
-  [GitHub Profile Settings]:                                     https://github.com/settings/profile
-  [GitHub Email Settings]:                                       https://github.com/settings/emails
-  [tips for reviewing patches]:                                  https://www.drupal.org/patch/review
-  [missing functionality]:                                       https://reactos.org/wiki/Missing_ReactOS_Functionality
-  [patch]:                                                       https://git-scm.com/docs/git-format-patch
-  [Submitting Patches]:                                          https://reactos.org/wiki/Submitting_Patches
-  [Coding Style]:                                                https://reactos.org/wiki/Coding_Style
-  [chat]:                                                        https://reactos.org/wiki/Mattermost
-  [Programming Guidelines]:                                      https://reactos.org/wiki/Programming_Guidelines
-  [3rd Party Files.txt]:                                         /media/doc/3rd_Party_Files.txt
-  [README.WINE]:                                                 /media/doc/README.WINE
-  [README.FSD]:                                                  /media/doc/README.FSD
-  [Coverity]:                                                    https://scan.coverity.com/projects/reactos
-  [request-coverity]:                                            https://scan.coverity.com/memberships/new?project_id=reactos
-  [commit template]:                                             .gitmessage
-
-# See Also
-
-- [Rules for managing Pull Requests](PULL_REQUEST_MANAGEMENT.md)
+Ваш вклад — это не просто код; это часть построения сообщества и экосистемы. Добро пожаловать в KOSMOS!

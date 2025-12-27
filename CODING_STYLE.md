@@ -1,356 +1,519 @@
-# Coding Style
+# KOSMOS Coding Style Guide
 
-This article describes general coding style guidelines, which should be used for new ReactOS code. These guidelines apply exclusively to C and C++ source files. The Members of ReactOS agreed on this document in the October 2013 meeting.
+## 📋 Общие принципы
 
-As much existing ReactOS code as possible should be converted to this style unless there are reasons against doing this (like if the code is going to be rewritten from scratch in the near future). See [Notes on reformatting existing code](#notes-on-reformatting-existing-code) for more details.
+### Читаемость и понятность
+- **Код должен быть понятен новым разработчикам** через 6 месяцев после написания
+- **Имена переменных и функций должны быть самодокументирующими**
+- **Избегайте "умного" кода** в пользу понятного и поддерживаемого
+- **Комментарии должны объяснять "почему", а не "что"**
 
-Code synchronized with other sources (like Wine) must not be rewritten. [3rd Party Files.txt](https://github.com/reactos/reactos/blob/master/media/doc/3rd%20Party%20Files.txt) and [WINESYNC.txt](https://github.com/reactos/reactos/blob/master/media/doc/WINESYNC.txt) files can be used for tracking synchronized files.
+### Стабильность и надежность
+- **Каждая функция должна проверять свои входные параметры**
+- **Обработка ошибок обязательна** для всех критических операций
+- **Избегайте утечек ресурсов** (память, дескрипторы файлов, мьютексы)
+- **Все публичные API должны быть документированы**
 
-## File Structure
+## 🏗️ Архитектурные рекомендации
 
-1. Every ReactOS source code file should include a file header like this:
+### 1. Организация кода
+```
+// ПЛОХО: Все в одном файле
+// file: kernel.c
+void init_kernel() { ... }
+void handle_interrupt() { ... }
+void manage_memory() { ... }
+
+// ХОРОШО: Разделение на модули
+// file: kernel/init.c
+void kernel_init() { ... }
+
+// file: kernel/interrupts.c  
+void interrupt_handler() { ... }
+
+// file: mm/paging.c
+void setup_paging() { ... }
+```
+
+### 2. Занесение повторяющихся действий в функции
+```c
+// ПЛОХО: Повторяющийся код
+void process_user_input() {
+    // ... 50 строк кода ...
+    if (validate_buffer(buffer1, size1)) {
+        // обработка
+    }
+    // ... еще 50 строк ...
+    if (validate_buffer(buffer2, size2)) {
+        // другая обработка
+    }
+}
+
+// ХОРОШО: Вынесение в функцию
+static BOOL validate_input_buffer(PVOID buffer, SIZE_T size) {
+    if (!buffer || size == 0) {
+        KOSMOS_LOG_ERROR("Invalid buffer parameters");
+        return FALSE;
+    }
+    if (size > MAX_BUFFER_SIZE) {
+        KOSMOS_LOG_WARNING("Buffer size exceeds maximum");
+        return FALSE;
+    }
+    return TRUE;
+}
+
+void process_user_input() {
+    if (!validate_input_buffer(buffer1, size1)) return;
+    if (!validate_input_buffer(buffer2, size2)) return;
+    // ... основная логика ...
+}
+```
+
+### 3. Разделение объявлений и реализаций
+```
+// ПЛОХАЯ СТРУКТУРА:
+// file: driver.c
+typedef struct _DEVICE_EXTENSION {
+    // поля структуры
+} DEVICE_EXTENSION;
+
+NTSTATUS driver_entry(...) {
+    // реализация
+}
+
+void helper_function(...) {
+    // реализация
+}
+
+// ХОРОШАЯ СТРУКТУРА:
+// file: include/drivers/device.h
+#pragma once
+
+typedef struct _DEVICE_EXTENSION {
+    // объявление структуры
+} DEVICE_EXTENSION;
+
+NTSTATUS driver_entry(...);
+void helper_function(...);
+
+// file: drivers/device/device.c
+#include "device.h"
+
+NTSTATUS driver_entry(...) {
+    // реализация
+}
+
+// file: drivers/device/helpers.c  
+#include "device.h"
+
+void helper_function(...) {
+    // реализация
+}
+```
+
+## 📁 Организация заголовочных файлов
+
+### 1. Правила для `.h` файлов
+```c
+// file: include/kosmos/mm/pool.h
+
+// 1. Защита от повторного включения
+#ifndef _KOSMOS_MM_POOL_H
+#define _KOSMOS_MM_POOL_H
+
+// 2. Только необходимые инклюды
+#include <kosmos/types.h>
+#include <kosmos/status.h>
+
+// 3. Только объявления, НЕ определения
+typedef struct _POOL_DESCRIPTOR {
+    PVOID BaseAddress;
+    SIZE_T Size;
+    ULONG Flags;
+} POOL_DESCRIPTOR, *PPOOL_DESCRIPTOR;
+
+// 4. Документация Doxygen-style
+/**
+ * @brief Инициализирует пул памяти
+ * @param Pool Указатель на дескриптор пула
+ * @param Size Размер пула в байтах
+ * @param Flags Флаги инициализации
+ * @return STATUS_SUCCESS при успехе, код ошибки при неудаче
+ */
+NTSTATUS 
+KOSMOS_API
+PoolInitialize(
+    _Out_ PPOOL_DESCRIPTOR Pool,
+    _In_ SIZE_T Size,
+    _In_ ULONG Flags
+);
+
+/**
+ * @brief Выделяет память из пула
+ * @param Pool Дескриптор пула
+ * @param Size Запрашиваемый размер
+ * @return Указатель на память или NULL при ошибке
+ */
+PVOID
+KOSMOS_API
+PoolAllocate(
+    _In_ PPOOL_DESCRIPTOR Pool,
+    _In_ SIZE_T Size
+);
+
+// 5. Завершающая директива
+#endif // _KOSMOS_MM_POOL_H
+```
+
+### 2. Правила для `.c` файлов
+```c
+// file: mm/pool.c
+
+// 1. Инклюд своего заголовка первым
+#include "pool.h"
+
+// 2. Системные инклюды
+#include <ntdef.h>
+#include <rtl.h>
+
+// 3. Локальные инклюды
+#include "pool_internal.h"
+#include "../debug/log.h"
+
+// 4. Статические функции (только для этого файла)
+static VOID
+PoolValidateDescriptor(
+    _In_ PPOOL_DESCRIPTOR Pool
+    )
+{
+    ASSERT(Pool != NULL);
+    ASSERT(Pool->BaseAddress != NULL);
+    ASSERT(Pool->Size > 0);
+}
+
+// 5. Реализация экспортируемых функций
+NTSTATUS
+PoolInitialize(
+    _Out_ PPOOL_DESCRIPTOR Pool,
+    _In_ SIZE_T Size,
+    _In_ ULONG Flags
+    )
+{
+    NTSTATUS status;
+    
+    // Проверка параметров
+    if (!Pool || Size == 0) {
+        KOSMOS_LOG_ERROR("Invalid parameters to PoolInitialize");
+        return STATUS_INVALID_PARAMETER;
+    }
+    
+    // Инициализация
+    RtlZeroMemory(Pool, sizeof(POOL_DESCRIPTOR));
+    
+    Pool->BaseAddress = ExAllocatePoolWithTag(NonPagedPool, Size, 'looP');
+    if (!Pool->BaseAddress) {
+        KOSMOS_LOG_ERROR("Failed to allocate pool memory");
+        return STATUS_INSUFFICIENT_RESOURCES;
+    }
+    
+    Pool->Size = Size;
+    Pool->Flags = Flags;
+    
+    KOSMOS_LOG_INFO("Pool initialized: 0x%p, size: %lu", 
+                   Pool->BaseAddress, Size);
+    
+    return STATUS_SUCCESS;
+}
+```
+
+## 📝 Соглашения об именовании
+
+### 1. Префиксы
+```c
+// Типы
+typedef struct _KOSMOS_THREAD { ... } KOSMOS_THREAD, *PKOSMOS_THREAD;
+typedef enum _KOSMOS_STATUS { ... } KOSMOS_STATUS;
+
+// Функции
+KOSMOS_API NTSTATUS ThreadCreate(...);  // Модуль Thread
+KOSMOS_API NTSTATUS MemoryAllocate(...); // Модуль Memory
+
+// Константы
+#define KOSMOS_MAX_THREADS     256
+#define KOSMOS_PAGE_SIZE       4096
+
+// Макросы
+#define KOSMOS_ASSERT(expr)    ASSERT(expr)
+#define KOSMOS_ALIGN(size, align) (((size) + (align) - 1) & ~((align) - 1))
+```
+
+### 2. Венгерская нотация (опционально, но рекомендуется)
+```c
+// Префиксы типов:
+// p - pointer (указатель)
+// h - handle (дескриптор)
+// dw - DWORD (32-битное)
+// ul - ULONG
+// sz - zero-terminated string
+
+PKOSMOS_THREAD pThread;      // Указатель на поток
+HANDLE hFile;                // Дескриптор файла
+DWORD dwErrorCode;          // Код ошибки
+ULONG ulThreadId;           // ID потока
+PWSTR szFileName;           // Имя файла
+```
+
+## 🔧 Практические рекомендации
+
+### 1. Длина функций
+```c
+// ПЛОХО: Функция на 200+ строк
+NTSTATUS DoEverything(...) {
+    // ... 200 строк кода ...
+}
+
+// ХОРОШО: Разделение на логические блоки
+NTSTATUS ProcessRequest(...) {
+    NTSTATUS status;
+    
+    status = ValidateRequest(...);
+    if (!NT_SUCCESS(status)) return status;
+    
+    status = PrepareResources(...);
+    if (!NT_SUCCESS(status)) goto cleanup;
+    
+    status = ExecuteOperation(...);
+    if (!NT_SUCCESS(status)) goto cleanup;
+    
+    status = SaveResults(...);
+    
+cleanup:
+    CleanupResources(...);
+    return status;
+}
+```
+
+### 2. Обработка ошибок
+```c
+// ПЛОХО: Игнорирование ошибок
+HANDLE hFile = CreateFile(...);
+WriteFile(hFile, ...);
+CloseHandle(hFile);
+
+// ХОРОШО: Полная обработка ошибок
+NTSTATUS WriteToFile(PCWSTR filename, PVOID data, SIZE_T size) {
+    HANDLE hFile = INVALID_HANDLE_VALUE;
+    DWORD bytesWritten;
+    NTSTATUS status = STATUS_SUCCESS;
+    
+    hFile = CreateFileW(filename, GENERIC_WRITE, 0, NULL,
+                       CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        status = STATUS_ACCESS_DENIED;
+        KOSMOS_LOG_ERROR("Failed to create file: %ws", filename);
+        goto cleanup;
+    }
+    
+    if (!WriteFile(hFile, data, size, &bytesWritten, NULL)) {
+        status = STATUS_WRITE_FAULT;
+        KOSMOS_LOG_ERROR("Write failed: %lu", GetLastError());
+        goto cleanup;
+    }
+    
+    if (bytesWritten != size) {
+        status = STATUS_PARTIAL_COPY;
+        KOSMOS_LOG_WARNING("Partial write: %lu of %lu bytes", 
+                          bytesWritten, size);
+    }
+    
+cleanup:
+    if (hFile != INVALID_HANDLE_VALUE) {
+        CloseHandle(hFile);
+    }
+    
+    return status;
+}
+```
+
+### 3. Максимальная длина строк
+- **80 символов** для кода (для удобного сравнения в diff)
+- **120 символов** для комментариев
+- Используйте обратный слеш для переноса длинных строк
+
+```c
+// ХОРОШО:
+status = SomeVeryLongFunctionName(
+    parameter1, 
+    parameter2,
+    parameter3,
+    parameter4
+    );
+
+// ПЛОХО:
+status = SomeVeryLongFunctionName(parameter1, parameter2, parameter3, parameter4, parameter5, parameter6);
+```
+
+## 📊 Пример правильной структуры проекта
 
 ```
-/*
- * PROJECT:     ReactOS Kernel
- * LICENSE:     GPL-2.0-or-later (https://spdx.org/licenses/GPL-2.0-or-later)
- * PURPOSE:     Does cool things like Memory Management
- * COPYRIGHT:   Copyright 2017 Arno Nymous <abc@mailaddress.com>
- *              Copyright 2017 Mike Blablabla <mike@blabla.com>
+kosmos/
+├── include/                   # Публичные заголовки
+│   ├── kosmos/
+│   │   ├── kernel.h          # Основное API ядра
+│   │   ├── mm/               # Менеджер памяти
+│   │   │   ├── pool.h
+│   │   │   └── heap.h
+│   │   ├── drivers/          # Драйверы
+│   │   │   └── pci.h
+│   │   └── utils/            # Утилиты
+│   │       └── string.h
+│   └── internal/             # Внутренние заголовки
+│       └── debug.h
+├── kernel/                   # Исходники ядра
+│   ├── init.c
+│   ├── thread.c
+│   ├── sync.c
+│   └── include/             # Приватные заголовки модуля
+│       └── thread_private.h
+├── mm/                       # Менеджер памяти
+│   ├── pool.c
+│   ├── heap.c
+│   └── paging.c
+├── drivers/                  # Драйверы
+│   ├── pci/
+│   │   ├── pci.c
+│   │   └── pci_private.h
+│   └── storage/
+│       ├── ata.c
+│       └── include/
+│           └── ata_io.h
+└── utils/                    # Утилиты
+    ├── string.c
+    └── debug.c
+```
+
+## 🚨 Запрещенные практики
+
+### 1. Никогда не делайте так:
+```c
+// Магические числа
+for (int i = 0; i < 256; i++) { ... }  // ПЛОХО!
+
+// Вместо этого:
+#define MAX_THREADS 256
+for (int i = 0; i < MAX_THREADS; i++) { ... }
+
+// Глобальные переменные в заголовках
+extern int g_globalCounter;  // ПЛОХО!
+
+// Функции без проверки параметров
+void dangerous_function(void* ptr) {
+    *((int*)ptr) = 42;  // СЕГФАУЛТ если ptr == NULL
+}
+
+// Утечки в макросах
+#define SQUARE(x) x * x  // ПЛОХО: SQUARE(a + b) -> a + b * a + b
+#define SQUARE(x) ((x) * (x))  // ХОРОШО
+```
+
+## 📚 Дополнительные рекомендации
+
+### 1. Для C++ кода (если будет использоваться)
+```cpp
+// file: include/kosmos/utils/smart_ptr.hpp
+#pragma once
+
+namespace kosmos {
+namespace utils {
+
+template<typename T>
+class UniquePtr {
+public:
+    explicit UniquePtr(T* ptr = nullptr) : ptr_(ptr) {}
+    ~UniquePtr() { reset(); }
+    
+    // Запрет копирования
+    UniquePtr(const UniquePtr&) = delete;
+    UniquePtr& operator=(const UniquePtr&) = delete;
+    
+    // Разрешение перемещения
+    UniquePtr(UniquePtr&& other) noexcept : ptr_(other.ptr_) {
+        other.ptr_ = nullptr;
+    }
+    
+    UniquePtr& operator=(UniquePtr&& other) noexcept {
+        if (this != &other) {
+            reset();
+            ptr_ = other.ptr_;
+            other.ptr_ = nullptr;
+        }
+        return *this;
+    }
+    
+    T* get() const { return ptr_; }
+    T* operator->() const { return ptr_; }
+    T& operator*() const { return *ptr_; }
+    
+    void reset(T* ptr = nullptr) {
+        delete ptr_;
+        ptr_ = ptr;
+    }
+    
+private:
+    T* ptr_;
+};
+
+} // namespace utils
+} // namespace kosmos
+```
+
+### 2. Комментарии в стиле Doxygen
+```c
+/**
+ * @brief Краткое описание функции
+ * @detailed Подробное описание, можно на несколько строк
+ * 
+ * @param param1 Описание первого параметра
+ * @param param2 Описание второго параметра
+ * @param[out] output Параметр, используемый для вывода
+ * 
+ * @return Код возврата или результат
+ * @retval STATUS_SUCCESS Успешное выполнение
+ * @retval STATUS_INVALID_PARAMETER Некорректные параметры
+ * 
+ * @note Важное примечание для разработчиков
+ * @warning Предупреждение о возможных проблемах
+ * @bug Известные баги или ограничения
+ * 
+ * @example
+ * NTSTATUS status = ExampleFunction(param1, param2, &output);
+ * if (NT_SUCCESS(status)) {
+ *     // Обработка результата
+ * }
  */
 ```
 
-Please use SPDX license identifiers available at https://spdx.org/licenses.
-This makes our source file parseable by licensing tools!
+## 🔍 Проверка кода
 
-You should add yourself to the `COPYRIGHT` section of a file if you did a major contribution to it and could take responsibility for the whole file or a part of it. Not more than 3 people shall be in that list for each file.
+### 1. Перед коммитом:
+```bash
 
-`FILE` line of the old header should be removed.
+# Статический анализ
+clang-tidy --checks=* source_file.c
 
-2. [Doxygen](https://doxygen.reactos.org/) documentation generator is used for ReactOS codebase, so use a proper header for functions, see [API Documentation](https://reactos.org/wiki/Documentation_Guidelines#API_Documentation) for details.
-
-## Indentation and line width
-
-1. Line width must be at most **100 characters**.
-2. Do not add a space or tab at the end of any line.
-3. Indent with **4 spaces**, don't use tabs!
-4. Indent both a case label and the case statement of a switch statement.
-
-**Right:**
-```c
-switch (Condition)
-{
-    case 1:
-        DoSomething();
-        break;
-
-    case 2:
-    {
-        DoMany();
-        ManyMore();
-        OtherThings();
-        break;
-    }
-}
+# Построение и тесты
+cmake --build build --target kosmos-tests
 ```
 
-**Wrong:**
-```c
-switch(Condition)
-{
-case 1:
-     DoSomething();
-     break;
-case 2:
-    DoMany();
-    ManyMore();
-    OtherThings();
-    break;
-}
-```
-
-5. When a function call does not fit onto a line, align arguments like this:
-```c
-FunctionCall(arg1,
-             arg2,
-             arg3);
-```
-
-6. Function headers should have this format (preserving the order as in the example):
-```c
-static    // scope identifier
-CODE_SEG("PAGE")    // section placement
-// other attributes
-BOOLEAN    // return type
-FASTCALL    // calling convention
-IsOdd(
-    _In_ UINT32 Number);
-```
-
-## Spacing
-
-1. Do not use spaces around unary operators.  
-**Right:** `i++;`  
-**Wrong:** `i ++;`
-
-2. Place spaces around binary and ternary operators.  
-**Right:** `a = b + c;`  
-**Wrong:** `a=b+c;`
-
-3. Do not place spaces before comma and semicolon.
-
-**Right:**
-```c
-for (int i = 0; i < 5; i++)
-    DoSomething();
-
-func1(a, b);
-```
-
-**Wrong:**
-```c
-for (int i = 0; i < 5 ; i++)
-    DoSomething();
-
-func1(a , b) ;
-```
-
-4. Place spaces between control statements and their parentheses.
-
-**Right:**
-```c
-if (Condition)
-    DoSomething();
-```
-
-**Wrong:**
-```c
-if(Condition)
-    DoSomething();
-```
-
-5. Do not place spaces between a function and its parentheses, or between a parenthesis and its content.
-
-**Right:**
-```c
-func(a, b);
-```
-
-**Wrong:**
-```c
-func (a, b);
-func( a, b );
-```
-
-## Line breaking
-
-1. Each statement should get its own line.
-
-**Right:**
-```c
-x++;
-y++;
-
-if (Condition)
-    DoSomething();
-```
-
-**Wrong:**
-```c
-x++; y++;
-
-if (Condition) DoSomething();
-```
-
-## Braces
-
-1. Always put braces (`{` and `}`) on their own lines.
-2. One-line control clauses may use braces, but this is not a requirement. An exception are one-line control clauses including additional comments.
-
-**Right:**
-```c
-if (Condition)
-    DoSomething();
-
-if (Condition)
-{
-    DoSomething();
-}
-
-if (Condition)
-{
-    // This is a comment
-    DoSomething();
-}
-
-if (A_Very || (Very && Long || Condition) &&
-    On_Many && Lines)
-{
-    DoSomething();
-}
-
-if (Condition)
-    DoSomething();
-else
-    DoSomethingElse();
-
-if (Condition)
-{
-    DoSomething();
-}
-else
-{
-    DoSomethingElse();
-    YetAnother();
-}
-```
-
-**Wrong:**
-```c
-if (Condition) {
-    DoSomething();
-}
-
-if (Condition)
-    // This is a comment
-    DoSomething();
-
-if (A_Very || (Very && Long || Condition) &&
-    On_Many && Lines)
-    DoSomething();
-
-if (Condition)
-    DoSomething();
-else {
-    DoSomethingElse();
-    YetAnother();
-}
-```
-
-## Control structures
-
-1. Don't use inverse logic in control clauses.  
-**Right:** `if (i == 1)`  
-**Wrong:** `if (1 == i)`
-
-2. Avoid too many levels of cascaded control structures. Prefer a "linear style" over a "tree style". Use `goto` when it helps to make the code cleaner (e.g. for cleanup paths).
-
-**Right:**
-```c
-if (!func1())
-    return;
-
-i = func2();
-if (i == 0)
-    return;
-
-j = func3();
-if (j == 1)
-    return;
-...
-```
-
-**Wrong:**
-```c
-if (func1())
-{
-    i = func2();
-    if (func2())
-    {
-        j = func3();
-        if (func3())
-        {
-            ...
-        }
-    }
-}
-```
-
-## Naming
-
-1. Capitalize names of variables and functions. Hungarian Notation may be used when developing for Win32, but it is not required. If you don't use it, the first letter of a name must be a capital too (no lowerCamelCase). Do not use underscores as separators either.
-
-**Right:**
-```c
-PLIST_ENTRY FirstEntry;
-VOID NTAPI IopDeleteIoCompletion(PVOID ObjectBody);
-PWSTR pwszTest;
-```
-
-**Wrong:**
-```c
-PLIST_ENTRY first_entry;
-VOID NTAPI iop_delete_io_completion(PVOID objectBody);
-PWSTR pwsztest;
-```
-
-2. Avoid abbreviating function and variable names, use descriptive verbs where possible.
-
-3. Precede boolean values with meaningful verbs like "is" and "did" if possible and if it fits the usage.
-
-**Right:**
-```c
-BOOLEAN IsValid;
-BOOLEAN DidSendData;
-```
-
-**Wrong:**
-```c
-BOOLEAN Valid;
-BOOLEAN SentData;
-```
-
-## Commenting
-
-1. Avoid line-wasting comments, which could fit into a single line.
-
-**Right:**
-```c
-// This is a one-line comment
-
-/* This is a C-style comment */
-
-// This is a comment over multiple lines.
-// We don't define any strict rules for it.
-```
-
-**Wrong:**
-```c
-//
-// This comment wastes two lines
-//
-```
-
-## Null, false and 0
-
-1. The null pointer should be written as `NULL`. In the rare case that your environment recommends a different null pointer (e.g. C++11 `nullptr`), you may use this one of course. Just don't use the value `0`.
-
-2. Win32/NT Boolean values should be written as `TRUE` and `FALSE`. In the rare case that you use C/C++ `bool` variables, you should write them as `true` and `false`.
-
-3. When you need to terminate ANSI or OEM string, or check for its terminator, use `ANSI_NULL`. If the string is Unicode or Wide string, use `UNICODE_NULL`.
-
-## Notes on reformatting existing code
-
-- Never totally reformat a file and put a code change into it. Do this in separate commits.
-- If a commit only consists of formatting changes, say this clearly in the commit message by preceding it with *[FORMATTING]*.
-
-## Other points
-
-- Do not use `LARGE_INTEGER`/`ULARGE_INTEGER` unless needed for using APIs. Use `INT64`/`UINT64` instead
-- Use `#pragma once` instead of guard defines in headers
-- Don't specify a calling convention for a function unless required (usually for APIs or exported symbols)
-
-## Using an automatic code style tool
-
-TO BE ADDED BY User:Zefklop
-
-## Points deliberately left out
-
-Additional ideas were suggested during the discussion of this document, but a consensus couldn't be reached on them. Therefore we refrain from enforcing any rules on these points:
-
-- TO BE ADDED BY User:Hbelusca
-
-## See also
-
-- [Kernel Coding Style](https://reactos.org/wiki/Kernel_Coding_Style)
-- [GNU Indent](https://reactos.org/wiki/GNU_Indent)
+### 2. Чек-лист ревью кода:
+- [ ] Соответствует стилю KOSMOS
+- [ ] Нет дублирования кода
+- [ ] Проверка всех параметров функций
+- [ ] Обработка всех возможных ошибок
+- [ ] Документация публичных API
+- [ ] Тесты для новой функциональности
+- [ ] Сохранение обратной совместимости (если нужно)
+
+---
+
+**Помните:** Хороший код — это код, который легко читать, понимать и поддерживать. Следуя этим правилам, мы создадим стабильную и надежную операционную систему KOSMOS, которую будет приятно разрабатывать годами.
