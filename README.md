@@ -4,7 +4,7 @@
 
 # KOSMOS
 
-<img src="https://эндлад.рф/logo.png" alt="KOSMOS Logo" width="200">
+<img src="https://raw.githubusercontent.com/Endlad2/KOSMOS/refs/heads/main/docs/logo.png" alt="KOSMOS Logo" width="200">
 
 **KOSMOS** — это форк ReactOS, ориентированный на **стабильность** и совместимость с **NT Workstation 10**. Наша цель — создать надежную операционную систему для повседневного использования, сохраняя совместимость с Windows-приложениями и драйверами.
 
